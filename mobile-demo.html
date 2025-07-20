@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dungeon Crawler Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f1419 100%);
+            overflow: hidden;
+            user-select: none;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .menu-container {
+            background: linear-gradient(145deg, #1e1e3f 0%, #2a2a5a 100%);
+            border: 2px solid #4a4a7a;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            max-width: 90vw;
+        }
+
+        .game-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            color: #ff6b6b;
+            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            margin-bottom: 10px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .game-subtitle {
+            font-size: clamp(0.9rem, 3vw, 1.2rem);
+            color: #a0a0ff;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .menu-btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #3a3a6a 0%, #2a2a5a 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            min-width: 200px;
+        }
+
+        .menu-btn.primary {
+            background: linear-gradient(145deg, #ff6b6b 0%, #ee5a5a 100%);
+        }
+
+        .menu-btn:active {
+            transform: scale(0.95);
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0a;
+            touch-action: none;
+        }
+
+        #gameUI {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #topHUD {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 100%);
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            z-index: 100;
+            pointer-events: all;
+        }
+
+        .stat-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4757 0%, #ff6b6b 100%);
+            transition: width 0.3s ease;
+        }
+
+        .level-display, .score-display {
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin: 0 15px;
+        }
+
+        #touchControls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        #joystick {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: all;
+        }
+
+        .joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(145deg, #4a9eff 0%, #357abd 100%);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+        }
+
+        #actionButtons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: all;
+        }
+
+        .action-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #ff6b6b 0%, #ee5a5a 100%);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .action-btn:active {
+            transform: scale(0.9);
+        }
+
+        .action-btn:nth-child(2) {
+            background: linear-gradient(145deg, #4a9eff 0%, #357abd 100%);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Menu principal -->
+        <div id="startScreen" class="screen active">
+            <div class="menu-container">
+                <h1 class="game-title">DUNGEON CRAWLER</h1>
+                <p class="game-subtitle">Rogue-like Mobile Adventure</p>
+                <button id="startBtn" class="menu-btn primary">🎮 JOUER</button>
+                <div style="margin-top: 20px; color: #888; font-size: 12px;">
+                    Utilisez le joystick pour vous déplacer<br>
+                    Boutons droite pour attaquer et dasher
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran de jeu -->
+        <div id="gameScreen" class="screen">
+            <canvas id="gameCanvas"></canvas>
+            <div id="gameUI">
+                <div id="topHUD">
+                    <div class="stat-bar">
+                        <div style="color: white; font-size: 12px; min-width: 25px;">VIE</div>
+                        <div class="bar-container">
+                            <div id="healthBar" class="bar-fill" style="width: 100%;"></div>
+                        </div>
+                        <div id="healthText" style="color: white; font-size: 12px;">100</div>
+                    </div>
+                    <div class="level-display" id="levelDisplay">Niveau 1</div>
+                    <div class="score-display" id="scoreDisplay">Score: 0</div>
+                </div>
+
+                <div id="touchControls">
+                    <div id="joystick">
+                        <div class="joystick-knob"></div>
+                    </div>
+                    <div id="actionButtons">
+                        <button class="action-btn" id="attackBtn">⚔️</button>
+                        <button class="action-btn" id="dashBtn">💨</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let canvas, ctx;
+        let gameState = 'menu';
+        let gameLoop;
+        
+        // Joueur
+        let player = {
+            x: 400,
+            y: 300,
+            vx: 0,
+            vy: 0,
+            size: 16,
+            health: 100,
+            maxHealth: 100,
+            speed: 200,
+            color: '#4a9eff',
+            isDashing: false,
+            dashCooldown: 0,
+            attackCooldown: 0,
+            score: 0,
+            level: 1
+        };
+
+        // Ennemis
+        let enemies = [];
+        let projectiles = [];
+        let particles = [];
+
+        // Contrôles
+        let joystick = {
+            active: false,
+            startX: 0,
+            startY: 0,
+            deltaX: 0,
+            deltaY: 0,
+            strength: 0
+        };
+
+        let lastTime = 0;
+
+        // Initialisation
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            setupControls();
+            
+            console.log('🎮 Jeu initialisé');
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function setupControls() {
+            // Bouton start
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            
+            // Joystick
+            const joystickEl = document.getElementById('joystick');
+            const knob = joystickEl.querySelector('.joystick-knob');
+            
+            joystickEl.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = joystickEl.getBoundingClientRect();
+                joystick.active = true;
+                joystick.startX = rect.left + rect.width / 2;
+                joystick.startY = rect.top + rect.height / 2;
+                updateJoystick(touch, knob);
+            });
+
+            joystickEl.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (joystick.active) {
+                    updateJoystick(e.touches[0], knob);
+                }
+            });
+
+            joystickEl.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                joystick.active = false;
+                joystick.deltaX = 0;
+                joystick.deltaY = 0;
+                joystick.strength = 0;
+                knob.style.transform = 'translate(-50%, -50%)';
+            });
+
+            // Boutons d'action
+            document.getElementById('attackBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') attack();
+            });
+
+            document.getElementById('dashBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') dash();
+            });
+
+            // Redimensionnement
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function updateJoystick(touch, knob) {
+            const deltaX = touch.clientX - joystick.startX;
+            const deltaY = touch.clientY - joystick.startY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = 30;
+            
+            const constrainedDistance = Math.min(distance, maxDistance);
+            const angle = Math.atan2(deltaY, deltaX);
+            
+            joystick.deltaX = Math.cos(angle) * (constrainedDistance / maxDistance);
+            joystick.deltaY = Math.sin(angle) * (constrainedDistance / maxDistance);
+            joystick.strength = constrainedDistance / maxDistance;
+            
+            const offsetX = joystick.deltaX * maxDistance;
+            const offsetY = joystick.deltaY * maxDistance;
+            knob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+        }
+
+        function startGame() {
+            gameState = 'playing';
+            showScreen('gameScreen');
+            resetGame();
+            if (!gameLoop) {
+                gameLoop = requestAnimationFrame(update);
+            }
+        }
+
+        function resetGame() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.health = player.maxHealth;
+            player.score = 0;
+            player.level = 1;
+            enemies = [];
+            projectiles = [];
+            particles = [];
+            
+            // Créer des ennemis
+            for (let i = 0; i < 5; i++) {
+                createEnemy();
+            }
+        }
+
+        function createEnemy() {
+            const margin = 100;
+            let x, y;
+            do {
+                x = margin + Math.random() * (canvas.width - margin * 2);
+                y = margin + Math.random() * (canvas.height - margin * 2);
+            } while (distance(x, y, player.x, player.y) < 150);
+            
+            enemies.push({
+                x: x,
+                y: y,
+                vx: 0,
+                vy: 0,
+                size: 14,
+                health: 30,
+                maxHealth: 30,
+                speed: 50,
+                color: '#ff4757',
+                attackCooldown: 0
+            });
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function update(currentTime) {
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 1/30);
+            lastTime = currentTime;
+
+            if (gameState === 'playing') {
+                updatePlayer(deltaTime);
+                updateEnemies(deltaTime);
+                updateProjectiles(deltaTime);
+                updateParticles(deltaTime);
+                updateUI();
+                render();
+            }
+
+            gameLoop = requestAnimationFrame(update);
+        }
+
+        function updatePlayer(deltaTime) {
+            // Mouvement
+            if (joystick.strength > 0.1) {
+                player.vx = joystick.deltaX * player.speed;
+                player.vy = joystick.deltaY * player.speed;
+            } else {
+                player.vx *= 0.8;
+                player.vy *= 0.8;
+            }
+
+            // Dash
+            if (player.isDashing) {
+                player.vx *= 3;
+                player.vy *= 3;
+            }
+
+            // Position
+            player.x += player.vx * deltaTime;
+            player.y += player.vy * deltaTime;
+
+            // Limites
+            player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
+            // Cooldowns
+            player.dashCooldown = Math.max(0, player.dashCooldown - deltaTime);
+            player.attackCooldown = Math.max(0, player.attackCooldown - deltaTime);
+            
+            if (player.isDashing) {
+                player.dashCooldown = Math.max(player.dashCooldown, 0.1);
+                if (player.dashCooldown <= 1.5) {
+                    player.isDashing = false;
+                }
+            }
+        }
+
+        function updateEnemies(deltaTime) {
+            enemies.forEach((enemy, index) => {
+                // IA simple - aller vers le joueur
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    enemy.vx = (dx / dist) * enemy.speed;
+                    enemy.vy = (dy / dist) * enemy.speed;
+                }
+
+                enemy.x += enemy.vx * deltaTime;
+                enemy.y += enemy.vy * deltaTime;
+
+                // Collision avec joueur
+                if (!player.isDashing && distance(enemy.x, enemy.y, player.x, player.y) < enemy.size + player.size) {
+                    player.health -= 10;
+                    createParticles(player.x, player.y, '#ff4757', 5);
+                    
+                    if (player.health <= 0) {
+                        gameOver();
+                    }
+                    
+                    // Repousser l'ennemi
+                    const angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                    enemy.x += Math.cos(angle) * 30;
+                    enemy.y += Math.sin(angle) * 30;
+                }
+
+                // Garder dans les limites
+                enemy.x = Math.max(enemy.size, Math.min(canvas.width - enemy.size, enemy.x));
+                enemy.y = Math.max(enemy.size, Math.min(canvas.height - enemy.size, enemy.y));
+            });
+        }
+
+        function updateProjectiles(deltaTime) {
+            projectiles.forEach((proj, index) => {
+                proj.x += proj.vx * deltaTime;
+                proj.y += proj.vy * deltaTime;
+                proj.life -= deltaTime;
+
+                // Collision avec ennemis
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (distance(proj.x, proj.y, enemy.x, enemy.y) < enemy.size + proj.size) {
+                        enemy.health -= 25;
+                        createParticles(enemy.x, enemy.y, '#4a9eff', 8);
+                        projectiles.splice(index, 1);
+
+                        if (enemy.health <= 0) {
+                            createParticles(enemy.x, enemy.y, '#ff4757', 15);
+                            enemies.splice(enemyIndex, 1);
+                            player.score += 100;
+                            
+                            // Créer un nouvel ennemi
+                            if (enemies.length < 5) {
+                                createEnemy();
+                            }
+                        }
+                    }
+                });
+
+                // Supprimer si hors limites ou mort
+                if (proj.life <= 0 || proj.x < 0 || proj.x > canvas.width || proj.y < 0 || proj.y > canvas.height) {
+                    projectiles.splice(index, 1);
+                }
+            });
+        }
+
+        function updateParticles(deltaTime) {
+            particles.forEach((particle, index) => {
+                particle.x += particle.vx * deltaTime;
+                particle.y += particle.vy * deltaTime;
+                particle.life -= deltaTime;
+                particle.vy += 100 * deltaTime; // Gravité
+
+                if (particle.life <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+        }
+
+        function attack() {
+            if (player.attackCooldown > 0) return;
+            
+            player.attackCooldown = 0.3;
+            
+            // Direction vers le centre de l'écran ou mouvement
+            let angle = 0;
+            if (joystick.strength > 0.1) {
+                angle = Math.atan2(joystick.deltaY, joystick.deltaX);
+            } else {
+                // Trouver l'ennemi le plus proche
+                let closest = null;
+                let closestDist = Infinity;
+                enemies.forEach(enemy => {
+                    const dist = distance(player.x, player.y, enemy.x, enemy.y);
+                    if (dist < closestDist) {
+                        closest = enemy;
+                        closestDist = dist;
+                    }
+                });
+                
+                if (closest) {
+                    angle = Math.atan2(closest.y - player.y, closest.x - player.x);
+                }
+            }
+
+            const speed = 400;
+            projectiles.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 4,
+                life: 2,
+                color: '#4a9eff'
+            });
+
+            createParticles(player.x, player.y, '#4a9eff', 3);
+        }
+
+        function dash() {
+            if (player.dashCooldown > 0 || joystick.strength < 0.1) return;
+            
+            player.isDashing = true;
+            player.dashCooldown = 2;
+            createParticles(player.x, player.y, '#ffffff', 10);
+        }
+
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 50 + Math.random() * 100;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 0.5 + Math.random() * 0.5,
+                    maxLife: 1,
+                    size: 2 + Math.random() * 3,
+                    color: color
+                });
+            }
+        }
+
+        function updateUI() {
+            const healthPercent = (player.health / player.maxHealth) * 100;
+            document.getElementById('healthBar').style.width = healthPercent + '%';
+            document.getElementById('healthText').textContent = Math.max(0, Math.round(player.health));
+            document.getElementById('levelDisplay').textContent = `Niveau ${player.level}`;
+            document.getElementById('scoreDisplay').textContent = `Score: ${player.score}`;
+        }
+
+        function render() {
+            // Nettoyer
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Particules (arrière)
+            particles.forEach(particle => {
+                const alpha = particle.life / particle.maxLife;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = particle.color;
+                ctx.fillRect(particle.x - particle.size/2, particle.y - particle.size/2, particle.size, particle.size);
+            });
+
+            ctx.globalAlpha = 1;
+
+            // Projectiles
+            projectiles.forEach(proj => {
+                ctx.fillStyle = proj.color;
+                ctx.fillRect(proj.x - proj.size/2, proj.y - proj.size/2, proj.size, proj.size);
+            });
+
+            // Ennemis
+            enemies.forEach(enemy => {
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
+                
+                // Barre de vie
+                if (enemy.health < enemy.maxHealth) {
+                    const barWidth = enemy.size;
+                    const barHeight = 3;
+                    const barY = enemy.y - enemy.size/2 - 8;
+                    
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(enemy.x - barWidth/2, barY, barWidth, barHeight);
+                    
+                    ctx.fillStyle = '#00ff00';
+                    const healthPercent = enemy.health / enemy.maxHealth;
+                    ctx.fillRect(enemy.x - barWidth/2, barY, barWidth * healthPercent, barHeight);
+                }
+            });
+
+            // Joueur
+            if (player.isDashing) {
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
+                ctx.globalAlpha = 1;
+            }
+            
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+        }
+
+        function gameOver() {
+            gameState = 'menu';
+            showScreen('startScreen');
+            document.querySelector('.game-subtitle').textContent = `Game Over! Score: ${player.score}`;
+        }
+
+        function distance(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Démarrage
+        document.addEventListener('DOMContentLoaded', init);
+        
+        // Empêcher le zoom sur mobile
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+    </script>
+</body>
+</html>
