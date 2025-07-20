@@ -1,42 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculatrice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dungeon Crawler - Rogue-like Mobile</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
-    <div class="calculatrice">
-        <div class="ecran">
-            <p></p>
+    <div id="gameContainer">
+        <!-- Écran de démarrage -->
+        <div id="startScreen" class="screen active">
+            <div class="menu-container">
+                <h1 class="game-title">DUNGEON CRAWLER</h1>
+                <p class="game-subtitle">Rogue-like Mobile Adventure</p>
+                <div class="menu-buttons">
+                    <button id="startBtn" class="menu-btn primary">Nouvelle Partie</button>
+                    <button id="continueBtn" class="menu-btn" style="display: none;">Continuer</button>
+                    <button id="settingsBtn" class="menu-btn">Paramètres</button>
+                    <button id="aboutBtn" class="menu-btn">À propos</button>
+                </div>
+            </div>
         </div>
-        <div class="content">
-            <div class="button">
-                <button id="C" data-key = "8">C</button>
-                <button data-key = "53">(</button>
-                <button data-key = "219">)</button>
-                <button data-key = "111">/</button>
-                <button data-key = "103">7</button>
-                <button data-key = "104">8</button>
-                <button data-key = "105">9</button>
-                <button data-key = "106">*</button>
-                <button data-key = "100">4</button>
-                <button data-key = "101">5</button>
-                <button data-key = "102">6</button>
-                <button data-key = "109">-</button>
-                <button data-key = "97">1</button>
-                <button data-key = "98">2</button>
-                <button data-key = "99">3</button>
-                <button data-key = "107">+</button>
-                <button data-key = "96">0</button>
-                <button data-key = "110">.</button>
-                <button id="egale" data-key = "13">=</button>
+
+        <!-- Écran de jeu principal -->
+        <div id="gameScreen" class="screen">
+            <div id="gameUI">
+                <!-- HUD supérieur -->
+                <div id="topHUD">
+                    <div id="healthBar" class="stat-bar">
+                        <div class="stat-label">VIE</div>
+                        <div class="bar-container">
+                            <div id="healthFill" class="bar-fill health"></div>
+                        </div>
+                        <div id="healthText" class="stat-text">100/100</div>
+                    </div>
+                    
+                    <div id="level" class="level-display">Niveau 1</div>
+                    
+                    <div id="score" class="score-display">Score: 0</div>
+                </div>
+
+                <!-- Canvas principal -->
+                <canvas id="gameCanvas"></canvas>
+
+                <!-- HUD inférieur -->
+                <div id="bottomHUD">
+                    <div id="inventory" class="inventory-container">
+                        <div class="inventory-slot" data-slot="0"></div>
+                        <div class="inventory-slot" data-slot="1"></div>
+                        <div class="inventory-slot" data-slot="2"></div>
+                        <div class="inventory-slot" data-slot="3"></div>
+                    </div>
+                    
+                    <div id="pauseBtn" class="control-btn">⏸️</div>
+                </div>
+
+                <!-- Contrôles tactiles -->
+                <div id="touchControls">
+                    <div id="joystick" class="joystick">
+                        <div id="joystickKnob" class="joystick-knob"></div>
+                    </div>
+                    
+                    <div id="actionButtons">
+                        <button id="attackBtn" class="action-btn">⚔️</button>
+                        <button id="dashBtn" class="action-btn">💨</button>
+                        <button id="useBtn" class="action-btn">🎒</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran de pause -->
+        <div id="pauseScreen" class="screen overlay">
+            <div class="menu-container">
+                <h2>Pause</h2>
+                <div class="menu-buttons">
+                    <button id="resumeBtn" class="menu-btn primary">Reprendre</button>
+                    <button id="restartBtn" class="menu-btn">Recommencer</button>
+                    <button id="mainMenuBtn" class="menu-btn">Menu Principal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran de Game Over -->
+        <div id="gameOverScreen" class="screen overlay">
+            <div class="menu-container">
+                <h2>Game Over</h2>
+                <div id="finalStats">
+                    <p>Score Final: <span id="finalScore">0</span></p>
+                    <p>Niveau Atteint: <span id="finalLevel">1</span></p>
+                    <p>Ennemis Vaincus: <span id="enemiesKilled">0</span></p>
+                </div>
+                <div class="menu-buttons">
+                    <button id="playAgainBtn" class="menu-btn primary">Rejouer</button>
+                    <button id="backToMenuBtn" class="menu-btn">Menu Principal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran de niveau complété -->
+        <div id="levelCompleteScreen" class="screen overlay">
+            <div class="menu-container">
+                <h2>Niveau Terminé!</h2>
+                <div id="levelRewards">
+                    <p>Bonus de Score: <span id="levelBonus">0</span></p>
+                    <div id="itemReward" class="item-display"></div>
+                </div>
+                <div class="menu-buttons">
+                    <button id="nextLevelBtn" class="menu-btn primary">Niveau Suivant</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran des paramètres -->
+        <div id="settingsScreen" class="screen overlay">
+            <div class="menu-container">
+                <h2>Paramètres</h2>
+                <div class="settings-group">
+                    <label for="soundVolume">Volume des Sons</label>
+                    <input type="range" id="soundVolume" min="0" max="100" value="70">
+                </div>
+                <div class="settings-group">
+                    <label for="musicVolume">Volume de la Musique</label>
+                    <input type="range" id="musicVolume" min="0" max="100" value="50">
+                </div>
+                <div class="settings-group">
+                    <label for="graphicsQuality">Qualité Graphique</label>
+                    <select id="graphicsQuality">
+                        <option value="low">Basse</option>
+                        <option value="medium" selected>Moyenne</option>
+                        <option value="high">Haute</option>
+                    </select>
+                </div>
+                <div class="menu-buttons">
+                    <button id="saveSettingsBtn" class="menu-btn primary">Sauvegarder</button>
+                    <button id="cancelSettingsBtn" class="menu-btn">Annuler</button>
+                </div>
             </div>
         </div>
     </div>
-    
-    <script src="script.js"></script>
+
+    <!-- Chargement des scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/items.js"></script>
+    <script src="js/dungeon.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
